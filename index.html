@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>2048 Break Infinity Base 4</title>
+<script src="https://cdn.jsdelivr.net/npm/break_infinity.js@2/dist/break_infinity.js"></script>
+  <link href="https://fonts.cdnfonts.com/css/clear-sans" rel="stylesheet">
+<style>
+body{background:#faf8ef;font-family:Clear Sans;text-align:center;margin:0}
+#game{width:320px;height:320px;margin:20px auto;background:#bbada0;padding:10px;border-radius:10px;display:grid;grid-template-columns:repeat(4,1fr);grid-gap:10px}
+.tile{width:70px;height:70px;line-height:70px;font-size:14px;font-weight:bold;border-radius:5px;background:#cdc1b4}
+#overlay{position:fixed;top:0;left:0;width:100%;height:100%;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.5)}
+#box{background:#fff;padding:20px;border-radius:10px}
+button{margin:5px;padding:10px}
+</style>
+</head>
+<body>
+<h2>2048 Base 4</h2>
+<div id="game"></div>
+<div id="overlay">
+<div id="box">
+<div id="msg"></div>
+<button onclick="reset()">Try again</button>
+<button onclick="keep()">Keep playing</button>
+</div>
+</div>
+<script>
+const ones=["U","D","T","Qd","Qi","Sx","Sp","Oc","N"]
+const tens=["M","B","Tr","Qa","Qt","St","Se","O","No","De","V","Tg","Qr","Qg","Sg","Su","Og","Ng","Ce"]
+const hundreds=["Du","Te","Qn","Ql","Sc","Sa","Pt","Ng","Mil"]
+const stages=["Micr","Nan","Pic","Femt"]
+let grid=[]
+let size=4
+let won=false
+function format(n){
+let d=new Decimal(n)
+let e=d.log10().floor().toNumber()
+let base=d.div(Decimal.pow(10,e)).toNumber().toFixed(2)
+let h=Math.floor(e/100)
+let t=Math.floor((e%100)/10)
+let o=e%10
+return base+" "+(hundreds[h]||"")+(tens[t]||"")+(ones[o]||"")+(stages[Math.floor(e/1000)]||"")
+}
+function init(){
+grid=[]
+for(let i=0;i<size*size;i++)grid.push(new Decimal(0))
+spawn();spawn();draw()
+}
+function spawn(){
+let empty=[]
+for(let i=0;i<grid.length;i++)if(grid[i].eq(0))empty.push(i)
+if(empty.length==0)return
+let i=empty[Math.floor(Math.random()*empty.length)]
+grid[i]=Decimal.pow(4,Math.random()<0.9?1:2)
+}
+function draw(){
+let g=document.getElementById("game")
+g.innerHTML=""
+grid.forEach(v=>{
+let d=document.createElement("div")
+d.className="tile"
+d.innerText=v.eq(0)?"":format(v)
+g.appendChild(d)
+})
+}
+function slide(arr){
+arr=arr.filter(v=>!v.eq(0))
+for(let i=0;i<arr.length-1;i++){
+if(arr[i].eq(arr[i+1])){
+arr[i]=arr[i].mul(4)
+arr[i+1]=new Decimal(0)
+if(arr[i].gte(Decimal.pow(4,11)))show("You won")
+}
+}
+arr=arr.filter(v=>!v.eq(0))
+while(arr.length<size)arr.push(new Decimal(0))
+return arr
+}
+function move(dir){
+let old=JSON.stringify(grid.map(x=>x.toString()))
+for(let r=0;r<size;r++){
+let row=[]
+for(let c=0;c<size;c++){
+let i=dir=="L"?r*size+c:
+dir=="R"?r*size+(size-1-c):
+dir=="U"?c*size+r:
+(size-1-c)*size+r
+row.push(grid[i])
+}
+row=slide(row)
+for(let c=0;c<size;c++){
+let i=dir=="L"?r*size+c:
+dir=="R"?r*size+(size-1-c):
+dir=="U"?c*size+r:
+(size-1-c)*size+r
+grid[i]=row[c]
+}
+}
+if(old!=JSON.stringify(grid.map(x=>x.toString())))spawn()
+draw()
+check()
+}
+function check(){
+if(grid.every(v=>!v.eq(0))){
+for(let i=0;i<size;i++){
+for(let j=0;j<size-1;j++){
+if(grid[i*size+j].eq(grid[i*size+j+1]))return
+if(grid[j*size+i].eq(grid[(j+1)*size+i]))return
+}
+}
+show("Game Over")
+}
+}
+function show(t){
+document.getElementById("msg").innerText=t
+document.getElementById("overlay").style.display="flex"
+}
+function reset(){
+document.getElementById("overlay").style.display="none"
+init()
+}
+function keep(){
+document.getElementById("overlay").style.display="none"
+}
+document.addEventListener("keydown",e=>{
+if(e.key=="ArrowLeft")move("L")
+if(e.key=="ArrowRight")move("R")
+if(e.key=="ArrowUp")move("U")
+if(e.key=="ArrowDown")move("D")
+})
+init()
+</script>
+</body>
+</html>
